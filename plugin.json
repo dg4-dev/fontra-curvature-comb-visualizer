@@ -1,0 +1,5 @@
+{
+  "name": "Curvature Comb",
+  "init": "src/start.js",
+  "function": "start"
+}
