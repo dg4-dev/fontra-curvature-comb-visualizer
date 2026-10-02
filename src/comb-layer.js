@@ -1,4 +1,8 @@
-import { combGain, sampleSegmentComb } from "./curvature.js";
+import {
+  combGain,
+  intervalCurvatureRatios,
+  sampleSegmentComb,
+} from "./curvature.js";
 
 export const LAYER_IDENTIFIER = "fontra-plugin.curvature-comb";
 
@@ -16,16 +20,16 @@ export function makeCombLayerDefinition(settings, getUnitsPerEm) {
     // plugin's sidebar panel instead.
     userSwitchable: false,
     zIndex: LAYER_Z_INDEX,
-    screenParameters: { strokeWidth: 1, outlineWidth: 1.5 },
+    screenParameters: {},
     colors: {
-      toothColor: "rgba(214, 64, 159, 0.55)",
-      outlineColor: "rgba(214, 64, 159, 0.9)",
-      fillColor: "rgba(214, 64, 159, 0.12)",
+      // Each fill cell between adjacent teeth goes from fillColorLow (no
+      // curvature) to fillColorHigh (the strongest curvature in the segment).
+      fillColorLow: "hsla(120, 70%, 42%, 0.55)",
+      fillColorHigh: "hsla(0, 80%, 50%, 0.55)",
     },
     colorsDarkMode: {
-      toothColor: "rgba(255, 120, 200, 0.55)",
-      outlineColor: "rgba(255, 120, 200, 0.9)",
-      fillColor: "rgba(255, 120, 200, 0.14)",
+      fillColorLow: "hsla(120, 65%, 50%, 0.6)",
+      fillColorHigh: "hsla(0, 85%, 60%, 0.6)",
     },
     draw: ({ context, positionedGlyph, parameters, model }) => {
       drawCombs(
@@ -81,50 +85,48 @@ export function drawCombs(context, glyph, parameters, model, settings, unitsPerE
     return;
   }
 
-  context.lineJoin = "round";
-  context.lineCap = "round";
-
-  if (settings.get("showFill")) {
-    context.fillStyle = parameters.fillColor;
-    for (const samples of combs) {
+  const low = parseHsla(parameters.fillColorLow);
+  const high = parseHsla(parameters.fillColorHigh);
+  for (const samples of combs) {
+    const ratios = intervalCurvatureRatios(samples);
+    for (let i = 0; i < ratios.length; i++) {
+      const a = samples[i];
+      const b = samples[i + 1];
+      context.fillStyle = mixHsla(low, high, ratios[i]);
       context.beginPath();
-      context.moveTo(samples[0].x, samples[0].y);
-      for (const s of samples) {
-        context.lineTo(s.tipX, s.tipY);
-      }
-      for (let i = samples.length - 1; i >= 0; i--) {
-        context.lineTo(samples[i].x, samples[i].y);
-      }
+      context.moveTo(a.x, a.y);
+      context.lineTo(a.tipX, a.tipY);
+      context.lineTo(b.tipX, b.tipY);
+      context.lineTo(b.x, b.y);
       context.closePath();
       context.fill();
     }
   }
+}
 
-  if (settings.get("showTeeth")) {
-    context.strokeStyle = parameters.toothColor;
-    context.lineWidth = parameters.strokeWidth;
-    context.beginPath();
-    for (const samples of combs) {
-      for (const s of samples) {
-        context.moveTo(s.x, s.y);
-        context.lineTo(s.tipX, s.tipY);
-      }
-    }
-    context.stroke();
-  }
+const HSLA_PATTERN =
+  /^hsla?\(\s*([-\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%\s*(?:,\s*([\d.]+)\s*)?\)$/;
 
-  if (settings.get("showOutline")) {
-    context.strokeStyle = parameters.outlineColor;
-    context.lineWidth = parameters.outlineWidth;
-    context.beginPath();
-    for (const samples of combs) {
-      context.moveTo(samples[0].tipX, samples[0].tipY);
-      for (let i = 1; i < samples.length; i++) {
-        context.lineTo(samples[i].tipX, samples[i].tipY);
-      }
-    }
-    context.stroke();
+export function parseHsla(color) {
+  const match = HSLA_PATTERN.exec(String(color).trim());
+  if (!match) {
+    throw new Error(`not an hsl()/hsla() color: ${color}`);
   }
+  const [, h, s, l, a] = match;
+  return { h: Number(h), s: Number(s), l: Number(l), a: a === undefined ? 1 : Number(a) };
+}
+
+/**
+ * Interpolate two HSLA colors. The hue is interpolated linearly (not along the
+ * shortest arc), so green (120) to red (0) passes through yellow.
+ */
+export function mixHsla(from, to, ratio) {
+  const r = Math.min(1, Math.max(0, ratio));
+  const mix = (key) => from[key] + (to[key] - from[key]) * r;
+  return (
+    `hsla(${mix("h").toFixed(1)}, ${mix("s").toFixed(1)}%, ` +
+    `${mix("l").toFixed(1)}%, ${mix("a").toFixed(3)})`
+  );
 }
 
 function* iterSegments(path, contourIndex) {
