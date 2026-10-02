@@ -17,7 +17,7 @@ Fontra の **Application settings → Plugins** で「+」を押し、プラグ�
 ### GitHub から
 
 ```plaintext
-dg4-design/fontra-curvature-comb-visualizer
+dg4-dev/fontra-curvature-comb-visualizer
 ```
 
 `owner/repo` 形式のアドレスは、Fontra が jsDelivr 経由(`https://cdn.jsdelivr.net/gh/<owner>/<repo>@latest`)で読み込みます(リポジトリが公開されている必要があります)。`@latest` はタグがあれば最新のリリースタグ、なければ既定のブランチ(`main`)を指します。
@@ -25,7 +25,7 @@ dg4-design/fontra-curvature-comb-visualizer
 開発中のブランチを試すときは、ブランチ名を付けた URL を入力します。
 
 ```plaintext
-https://cdn.jsdelivr.net/gh/dg4-design/fontra-curvature-comb-visualizer@develop
+https://cdn.jsdelivr.net/gh/dg4-dev/fontra-curvature-comb-visualizer@develop
 ```
 
 jsDelivr はブランチの内容をしばらくキャッシュするので、更新がすぐに反映されないことがあります。
