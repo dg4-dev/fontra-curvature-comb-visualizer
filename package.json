@@ -1,0 +1,14 @@
+{
+  "name": "fontra-curvature-comb-visualizer",
+  "version": "0.1.0",
+  "description": "Fontra plugin that draws live curvature combs on the glyph being edited",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  }
+}
