@@ -144,3 +144,28 @@ export function sampleSegmentComb(type, pts, numSamples, gain, maxLength = Infin
 export function combGain(unitsPerEm, scale) {
   return unitsPerEm * unitsPerEm * 0.005 * scale;
 }
+
+/**
+ * Curvature strength of each interval between adjacent comb samples, relative
+ * to the strongest curvature in the same segment.
+ *
+ * Returns one value per interval (samples.length - 1), in [0, 1]: the mean |k|
+ * of the interval's two samples divided by the segment's maximum |k|. A
+ * segment with no curvature at all yields zeros.
+ */
+export function intervalCurvatureRatios(samples) {
+  let maxK = 0;
+  for (const s of samples) {
+    maxK = Math.max(maxK, Math.abs(s.k));
+  }
+  const ratios = [];
+  for (let i = 0; i < samples.length - 1; i++) {
+    if (maxK < EPSILON) {
+      ratios.push(0);
+      continue;
+    }
+    const meanK = (Math.abs(samples[i].k) + Math.abs(samples[i + 1].k)) / 2;
+    ratios.push(Math.min(1, meanK / maxK));
+  }
+  return ratios;
+}

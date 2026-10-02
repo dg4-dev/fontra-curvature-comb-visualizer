@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   combGain,
   evaluateSegment,
+  intervalCurvatureRatios,
   sampleSegmentComb,
   signedCurvature,
 } from "../src/curvature.js";
@@ -134,4 +135,23 @@ test("combGain scales with UPM squared", () => {
   near(combGain(1000, 1) / 100, 50); // r = 100 at 1000 UPM -> 50 units
   near(combGain(2000, 1), 4 * combGain(1000, 1));
   near(combGain(1000, 2), 2 * combGain(1000, 1));
+});
+
+test("interval ratios are relative to the strongest curvature in the segment", () => {
+  const ratios = intervalCurvatureRatios([{ k: 0 }, { k: -2 }, { k: 4 }, { k: 4 }]);
+  assert.deepEqual(ratios, [0.25, 0.75, 1]);
+});
+
+test("interval ratios of a straight segment are zero", () => {
+  assert.deepEqual(intervalCurvatureRatios([{ k: 0 }, { k: 0 }, { k: 0 }]), [0, 0]);
+});
+
+test("interval ratios of a circular arc are all one", () => {
+  const samples = sampleSegmentComb("cubic", quarterCircle(100), 12, 1);
+  const ratios = intervalCurvatureRatios(samples);
+  assert.equal(ratios.length, 12);
+  for (const r of ratios) {
+    // The cubic approximation of a circle is not exactly constant-curvature.
+    assert.ok(r > 0.97 && r <= 1, `${r}`);
+  }
 });
