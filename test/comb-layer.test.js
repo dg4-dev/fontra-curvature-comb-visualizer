@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { drawCombs, mixHsla, parseHsla } from "../src/comb-layer.js";
+import { drawCombs, gradientHsla, mixHsla, parseHsla } from "../src/comb-layer.js";
 
 test("parseHsla reads hsl() and hsla()", () => {
   assert.deepEqual(parseHsla("hsla(120, 70%, 42%, 0.3)"), { h: 120, s: 70, l: 42, a: 0.3 });
@@ -8,13 +8,27 @@ test("parseHsla reads hsl() and hsla()", () => {
   assert.throws(() => parseHsla("red"));
 });
 
-test("mixHsla goes from green to red through yellow", () => {
+test("mixHsla interpolates each component linearly", () => {
   const green = parseHsla("hsla(120, 70%, 40%, 0.3)");
   const red = parseHsla("hsla(0, 80%, 50%, 0.5)");
   assert.equal(mixHsla(green, red, 0), "hsla(120.0, 70.0%, 40.0%, 0.300)");
   assert.equal(mixHsla(green, red, 0.5), "hsla(60.0, 75.0%, 45.0%, 0.400)");
   assert.equal(mixHsla(green, red, 1), "hsla(0.0, 80.0%, 50.0%, 0.500)");
   assert.equal(mixHsla(green, red, 2), mixHsla(green, red, 1));
+});
+
+test("gradientHsla goes from gray to red through yellow", () => {
+  const stops = [
+    parseHsla("hsla(50, 0%, 60%, 0.5)"),
+    parseHsla("hsla(50, 100%, 50%, 0.5)"),
+    parseHsla("hsla(0, 80%, 50%, 0.5)"),
+  ];
+  assert.equal(gradientHsla(stops, 0), "hsla(50.0, 0.0%, 60.0%, 0.500)");
+  assert.equal(gradientHsla(stops, 0.25), "hsla(50.0, 50.0%, 55.0%, 0.500)");
+  assert.equal(gradientHsla(stops, 0.5), "hsla(50.0, 100.0%, 50.0%, 0.500)");
+  assert.equal(gradientHsla(stops, 0.75), "hsla(25.0, 90.0%, 50.0%, 0.500)");
+  assert.equal(gradientHsla(stops, 1), "hsla(0.0, 80.0%, 50.0%, 0.500)");
+  assert.equal(gradientHsla(stops, -1), gradientHsla(stops, 0));
 });
 
 function recordingContext() {
@@ -65,7 +79,8 @@ test("fill is drawn per interval, colored by curvature ratio", () => {
     includeComponents: false,
   });
   const parameters = {
-    fillColorLow: "hsla(120, 70%, 42%, 0.3)",
+    fillColorLow: "hsla(50, 0%, 62%, 0.3)",
+    fillColorMid: "hsla(50, 95%, 50%, 0.3)",
     fillColorHigh: "hsla(0, 80%, 50%, 0.3)",
   };
   const { context, fills } = recordingContext();
