@@ -146,32 +146,37 @@ export function combGain(unitsPerEm, scale) {
 }
 
 /**
- * Largest |k| among the given comb samples.
+ * Curvature strength of each interval between adjacent comb samples: the mean
+ * |k| of the interval's two samples. Returns samples.length - 1 values.
  */
-export function maxAbsCurvature(samples) {
-  let maxK = 0;
-  for (const s of samples) {
-    maxK = Math.max(maxK, Math.abs(s.k));
+export function intervalCurvatures(samples) {
+  const strengths = [];
+  for (let i = 0; i < samples.length - 1; i++) {
+    strengths.push((Math.abs(samples[i].k) + Math.abs(samples[i + 1].k)) / 2);
   }
-  return maxK;
+  return strengths;
 }
 
 /**
- * Curvature strength of each interval between adjacent comb samples, relative
- * to a reference curvature (by default the strongest one in the samples).
+ * Position of each interval's curvature strength between the weakest (0) and
+ * the strongest (1) interval of all the given combs, typically the curved
+ * segments of one contour. Returns one array of ratios per comb.
  *
- * Returns one value per interval (samples.length - 1), in [0, 1]: the mean |k|
- * of the interval's two samples divided by maxK. A zero maxK yields zeros.
+ * When all intervals are (nearly) equally strong, every ratio is 0.
  */
-export function intervalCurvatureRatios(samples, maxK = maxAbsCurvature(samples)) {
-  const ratios = [];
-  for (let i = 0; i < samples.length - 1; i++) {
-    if (maxK < EPSILON) {
-      ratios.push(0);
-      continue;
+export function contourCurvatureRatios(combs) {
+  const strengths = combs.map(intervalCurvatures);
+  let min = Infinity;
+  let max = -Infinity;
+  for (const values of strengths) {
+    for (const v of values) {
+      min = Math.min(min, v);
+      max = Math.max(max, v);
     }
-    const meanK = (Math.abs(samples[i].k) + Math.abs(samples[i + 1].k)) / 2;
-    ratios.push(Math.min(1, meanK / maxK));
   }
-  return ratios;
+  const range = max - min;
+  if (!(range > EPSILON * Math.max(1, max))) {
+    return strengths.map((values) => values.map(() => 0));
+  }
+  return strengths.map((values) => values.map((v) => (v - min) / range));
 }

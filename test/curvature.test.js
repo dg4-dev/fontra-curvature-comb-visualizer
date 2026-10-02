@@ -3,8 +3,8 @@ import { test } from "node:test";
 import {
   combGain,
   evaluateSegment,
-  intervalCurvatureRatios,
-  maxAbsCurvature,
+  contourCurvatureRatios,
+  intervalCurvatures,
   sampleSegmentComb,
   signedCurvature,
 } from "../src/curvature.js";
@@ -138,27 +138,22 @@ test("combGain scales with UPM squared", () => {
   near(combGain(1000, 2), 2 * combGain(1000, 1));
 });
 
-test("interval ratios are relative to the strongest curvature in the segment", () => {
-  const ratios = intervalCurvatureRatios([{ k: 0 }, { k: -2 }, { k: 4 }, { k: 4 }]);
-  assert.deepEqual(ratios, [0.25, 0.75, 1]);
+test("interval curvatures are the mean |k| of adjacent samples", () => {
+  assert.deepEqual(intervalCurvatures([{ k: 0 }, { k: -2 }, { k: 4 }]), [1, 3]);
 });
 
-test("interval ratios of a straight segment are zero", () => {
-  assert.deepEqual(intervalCurvatureRatios([{ k: 0 }, { k: 0 }, { k: 0 }]), [0, 0]);
+test("contour ratios span from the weakest to the strongest interval", () => {
+  const ratios = contourCurvatureRatios([
+    [{ k: 1 }, { k: 1 }, { k: -3 }], // strengths 1, 2
+    [{ k: 5 }, { k: 5 }], // strength 5
+  ]);
+  assert.deepEqual(ratios, [[0, 0.25], [1]]);
 });
 
-test("interval ratios of a circular arc are all one", () => {
-  const samples = sampleSegmentComb("cubic", quarterCircle(100), 12, 1);
-  const ratios = intervalCurvatureRatios(samples);
-  assert.equal(ratios.length, 12);
-  for (const r of ratios) {
-    // The cubic approximation of a circle is not exactly constant-curvature.
-    assert.ok(r > 0.97 && r <= 1, `${r}`);
-  }
-});
-
-test("interval ratios can be relative to a given maximum", () => {
-  const samples = [{ k: 1 }, { k: -3 }];
-  assert.equal(maxAbsCurvature(samples), 3);
-  assert.deepEqual(intervalCurvatureRatios(samples, 8), [0.25]);
+test("contour ratios are zero when curvature is uniform", () => {
+  assert.deepEqual(contourCurvatureRatios([[{ k: 0 }, { k: 0 }, { k: 0 }]]), [[0, 0]]);
+  assert.deepEqual(contourCurvatureRatios([[{ k: 2 }, { k: -2 }], [{ k: 2 }, { k: 2 }]]), [
+    [0],
+    [0],
+  ]);
 });

@@ -125,7 +125,11 @@ const gradientParameters = {
   fillColorHigh: "hsla(0, 80%, 50%, 0.5)",
 };
 
-test("colors are relative to the strongest curvature in the contour", () => {
+// The cubic arc is not exactly constant-curvature, so allow a little spread.
+const isNearRed = (c) => c.h < 10;
+const isNearGray = (c) => c.h === 50 && c.s < 15;
+
+test("colors span from the weakest to the strongest curvature in the contour", () => {
   // One contour: a tight arc (r = 100) and a loose one (r = 400).
   const glyph = contoursGlyph([[arc(100), arc(400, 1000)]]);
   const settings = fakeSettings({ visible: true, scale: 1, density: 4 });
@@ -133,25 +137,33 @@ test("colors are relative to the strongest curvature in the contour", () => {
   drawCombs(context, glyph, gradientParameters, null, settings, 1000);
 
   assert.equal(fills.length, 8);
-  const tight = fills.slice(0, 4).map(parseHsla);
-  const loose = fills.slice(4).map(parseHsla);
-  for (const c of tight) {
-    assert.ok(c.h < 3, `tight arc should be red: ${c.h}`);
+  const colors = fills.map(parseHsla);
+  for (const c of colors.slice(0, 4)) {
+    assert.ok(isNearRed(c), `tight arc should be red: ${JSON.stringify(c)}`);
   }
-  for (const c of loose) {
-    // |k| ratio is about 1/4: halfway from gray to yellow.
-    assert.ok(Math.abs(c.h - 50) < 1e-9 && c.s > 40 && c.s < 60, `${JSON.stringify(c)}`);
+  for (const c of colors.slice(4)) {
+    assert.ok(isNearGray(c), `loose arc should be gray: ${JSON.stringify(c)}`);
   }
 });
 
 test("each contour is colored on its own scale", () => {
-  const glyph = contoursGlyph([[arc(100)], [arc(400, 1000)]]);
+  // The second contour is twice as large, so all its curvatures are halved.
+  const glyph = contoursGlyph([
+    [arc(100), arc(400, 1000)],
+    [arc(200), arc(800, 2000)],
+  ]);
   const settings = fakeSettings({ visible: true, scale: 1, density: 4 });
   const { context, fills } = recordingContext();
   drawCombs(context, glyph, gradientParameters, null, settings, 1000);
 
-  assert.equal(fills.length, 8);
-  for (const c of fills.map(parseHsla)) {
-    assert.ok(c.h < 3, `both arcs are their contour's strongest: ${c.h}`);
+  assert.equal(fills.length, 16);
+  const colors = fills.map(parseHsla);
+  for (const offset of [0, 8]) {
+    for (const c of colors.slice(offset, offset + 4)) {
+      assert.ok(isNearRed(c), `${JSON.stringify(c)}`);
+    }
+    for (const c of colors.slice(offset + 4, offset + 8)) {
+      assert.ok(isNearGray(c), `${JSON.stringify(c)}`);
+    }
   }
 });
