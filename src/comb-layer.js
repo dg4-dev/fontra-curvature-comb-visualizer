@@ -1,7 +1,6 @@
 import {
   combGain,
-  intervalCurvatureRatios,
-  maxAbsCurvature,
+  contourCurvatureRatios,
   sampleSegmentComb,
 } from "./curvature.js";
 
@@ -23,9 +22,9 @@ export function makeCombLayerDefinition(settings, getUnitsPerEm) {
     zIndex: LAYER_Z_INDEX,
     screenParameters: {},
     colors: {
-      // Each fill cell between adjacent teeth goes from fillColorLow (no
-      // curvature) through fillColorMid (half) to fillColorHigh (the
-      // strongest curvature in the contour). The gray shares yellow's hue so
+      // Each fill cell between adjacent teeth goes from fillColorLow (the
+      // weakest curvature in the contour) through fillColorMid (halfway) to
+      // fillColorHigh (the strongest curvature in the contour). The gray shares yellow's hue so
       // that only saturation and lightness change on the way to yellow.
       fillColorLow: "hsla(50, 0%, 62%, 0.55)",
       fillColorMid: "hsla(50, 95%, 50%, 0.55)",
@@ -101,10 +100,10 @@ export function drawCombs(context, glyph, parameters, model, settings, unitsPerE
     parseHsla(parameters.fillColorHigh),
   ];
   for (const combs of contours) {
-    // Colors are relative to the strongest curvature in the whole contour.
-    const maxK = Math.max(...combs.map(maxAbsCurvature));
-    for (const samples of combs) {
-      const ratios = intervalCurvatureRatios(samples, maxK);
+    // Colors span from the weakest to the strongest curvature in the contour.
+    const contourRatios = contourCurvatureRatios(combs);
+    for (const [combIndex, samples] of combs.entries()) {
+      const ratios = contourRatios[combIndex];
       for (let i = 0; i < ratios.length; i++) {
         const a = samples[i];
         const b = samples[i + 1];
