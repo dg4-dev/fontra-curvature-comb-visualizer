@@ -92,3 +92,66 @@ test("fill is drawn per interval, colored by curvature ratio", () => {
   // The strongest interval touches the maximum, so it is close to red.
   assert.ok(Math.min(...hues) < 15, `${hues}`);
 });
+
+function contoursGlyph(contours) {
+  return {
+    path: {
+      numContours: contours.length,
+      numPoints: 0,
+      *iterContourDecomposedSegments(contourIndex) {
+        yield* contours[contourIndex];
+      },
+    },
+  };
+}
+
+// Circular arcs: constant curvature 1 / r.
+function arc(r, dx = 0) {
+  const kappa = 0.5522847498;
+  return {
+    type: "cubic",
+    points: [
+      { x: dx + r, y: 0 },
+      { x: dx + r, y: r * kappa },
+      { x: dx + r * kappa, y: r },
+      { x: dx, y: r },
+    ],
+  };
+}
+
+const gradientParameters = {
+  fillColorLow: "hsla(50, 0%, 60%, 0.5)",
+  fillColorMid: "hsla(50, 100%, 50%, 0.5)",
+  fillColorHigh: "hsla(0, 80%, 50%, 0.5)",
+};
+
+test("colors are relative to the strongest curvature in the contour", () => {
+  // One contour: a tight arc (r = 100) and a loose one (r = 400).
+  const glyph = contoursGlyph([[arc(100), arc(400, 1000)]]);
+  const settings = fakeSettings({ visible: true, scale: 1, density: 4 });
+  const { context, fills } = recordingContext();
+  drawCombs(context, glyph, gradientParameters, null, settings, 1000);
+
+  assert.equal(fills.length, 8);
+  const tight = fills.slice(0, 4).map(parseHsla);
+  const loose = fills.slice(4).map(parseHsla);
+  for (const c of tight) {
+    assert.ok(c.h < 3, `tight arc should be red: ${c.h}`);
+  }
+  for (const c of loose) {
+    // |k| ratio is about 1/4: halfway from gray to yellow.
+    assert.ok(Math.abs(c.h - 50) < 1e-9 && c.s > 40 && c.s < 60, `${JSON.stringify(c)}`);
+  }
+});
+
+test("each contour is colored on its own scale", () => {
+  const glyph = contoursGlyph([[arc(100)], [arc(400, 1000)]]);
+  const settings = fakeSettings({ visible: true, scale: 1, density: 4 });
+  const { context, fills } = recordingContext();
+  drawCombs(context, glyph, gradientParameters, null, settings, 1000);
+
+  assert.equal(fills.length, 8);
+  for (const c of fills.map(parseHsla)) {
+    assert.ok(c.h < 3, `both arcs are their contour's strongest: ${c.h}`);
+  }
+});

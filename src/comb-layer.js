@@ -1,6 +1,7 @@
 import {
   combGain,
   intervalCurvatureRatios,
+  maxAbsCurvature,
   sampleSegmentComb,
 } from "./curvature.js";
 
@@ -24,7 +25,7 @@ export function makeCombLayerDefinition(settings, getUnitsPerEm) {
     colors: {
       // Each fill cell between adjacent teeth goes from fillColorLow (no
       // curvature) through fillColorMid (half) to fillColorHigh (the
-      // strongest curvature in the segment). The gray shares yellow's hue so
+      // strongest curvature in the contour). The gray shares yellow's hue so
       // that only saturation and lightness change on the way to yellow.
       fillColorLow: "hsla(50, 0%, 62%, 0.55)",
       fillColorMid: "hsla(50, 95%, 50%, 0.55)",
@@ -69,12 +70,14 @@ export function drawCombs(context, glyph, parameters, model, settings, unitsPerE
     paths.push({ path: glyph.componentsPath, contourFilter: null });
   }
 
-  const combs = [];
+  // One entry per contour: the comb samples of each of its curved segments.
+  const contours = [];
   for (const { path, contourFilter } of paths) {
     for (let contourIndex = 0; contourIndex < path.numContours; contourIndex++) {
       if (contourFilter && !contourFilter.has(contourIndex)) {
         continue;
       }
+      const combs = [];
       for (const segment of iterSegments(path, contourIndex)) {
         if (segment.type !== "quad" && segment.type !== "cubic") {
           continue; // straight lines have zero curvature
@@ -83,9 +86,12 @@ export function drawCombs(context, glyph, parameters, model, settings, unitsPerE
           sampleSegmentComb(segment.type, segment.points, density, gain, maxLength)
         );
       }
+      if (combs.length) {
+        contours.push(combs);
+      }
     }
   }
-  if (!combs.length) {
+  if (!contours.length) {
     return;
   }
 
@@ -94,19 +100,23 @@ export function drawCombs(context, glyph, parameters, model, settings, unitsPerE
     parseHsla(parameters.fillColorMid),
     parseHsla(parameters.fillColorHigh),
   ];
-  for (const samples of combs) {
-    const ratios = intervalCurvatureRatios(samples);
-    for (let i = 0; i < ratios.length; i++) {
-      const a = samples[i];
-      const b = samples[i + 1];
-      context.fillStyle = gradientHsla(stops, ratios[i]);
-      context.beginPath();
-      context.moveTo(a.x, a.y);
-      context.lineTo(a.tipX, a.tipY);
-      context.lineTo(b.tipX, b.tipY);
-      context.lineTo(b.x, b.y);
-      context.closePath();
-      context.fill();
+  for (const combs of contours) {
+    // Colors are relative to the strongest curvature in the whole contour.
+    const maxK = Math.max(...combs.map(maxAbsCurvature));
+    for (const samples of combs) {
+      const ratios = intervalCurvatureRatios(samples, maxK);
+      for (let i = 0; i < ratios.length; i++) {
+        const a = samples[i];
+        const b = samples[i + 1];
+        context.fillStyle = gradientHsla(stops, ratios[i]);
+        context.beginPath();
+        context.moveTo(a.x, a.y);
+        context.lineTo(a.tipX, a.tipY);
+        context.lineTo(b.tipX, b.tipY);
+        context.lineTo(b.x, b.y);
+        context.closePath();
+        context.fill();
+      }
     }
   }
 }
