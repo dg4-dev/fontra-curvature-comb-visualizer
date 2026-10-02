@@ -103,3 +103,7 @@ git-flow に沿って運用します。
 - `develop`:次のリリースに向けた統合ブランチ
 - `feature/*`:機能ごとの作業ブランチ。`develop` から切って `develop` へマージします
 - `release/*`:リリース準備。`develop` から切って `main` と `develop` へマージし、`main` にタグを付けます
+
+## ライセンス
+
+[GNU General Public License v3.0](LICENSE)(GPL-3.0)です。Fontra 本体と同じライセンスです。
