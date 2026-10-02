@@ -4,6 +4,7 @@ import {
   combGain,
   evaluateSegment,
   intervalCurvatureRatios,
+  maxAbsCurvature,
   sampleSegmentComb,
   signedCurvature,
 } from "../src/curvature.js";
@@ -154,4 +155,10 @@ test("interval ratios of a circular arc are all one", () => {
     // The cubic approximation of a circle is not exactly constant-curvature.
     assert.ok(r > 0.97 && r <= 1, `${r}`);
   }
+});
+
+test("interval ratios can be relative to a given maximum", () => {
+  const samples = [{ k: 1 }, { k: -3 }];
+  assert.equal(maxAbsCurvature(samples), 3);
+  assert.deepEqual(intervalCurvatureRatios(samples, 8), [0.25]);
 });
