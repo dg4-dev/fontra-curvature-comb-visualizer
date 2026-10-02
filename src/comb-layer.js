@@ -23,12 +23,16 @@ export function makeCombLayerDefinition(settings, getUnitsPerEm) {
     screenParameters: {},
     colors: {
       // Each fill cell between adjacent teeth goes from fillColorLow (no
-      // curvature) to fillColorHigh (the strongest curvature in the segment).
-      fillColorLow: "hsla(120, 70%, 42%, 0.55)",
+      // curvature) through fillColorMid (half) to fillColorHigh (the
+      // strongest curvature in the segment). The gray shares yellow's hue so
+      // that only saturation and lightness change on the way to yellow.
+      fillColorLow: "hsla(50, 0%, 62%, 0.55)",
+      fillColorMid: "hsla(50, 95%, 50%, 0.55)",
       fillColorHigh: "hsla(0, 80%, 50%, 0.55)",
     },
     colorsDarkMode: {
-      fillColorLow: "hsla(120, 65%, 50%, 0.6)",
+      fillColorLow: "hsla(50, 0%, 58%, 0.6)",
+      fillColorMid: "hsla(50, 90%, 55%, 0.6)",
       fillColorHigh: "hsla(0, 85%, 60%, 0.6)",
     },
     draw: ({ context, positionedGlyph, parameters, model }) => {
@@ -85,14 +89,17 @@ export function drawCombs(context, glyph, parameters, model, settings, unitsPerE
     return;
   }
 
-  const low = parseHsla(parameters.fillColorLow);
-  const high = parseHsla(parameters.fillColorHigh);
+  const stops = [
+    parseHsla(parameters.fillColorLow),
+    parseHsla(parameters.fillColorMid),
+    parseHsla(parameters.fillColorHigh),
+  ];
   for (const samples of combs) {
     const ratios = intervalCurvatureRatios(samples);
     for (let i = 0; i < ratios.length; i++) {
       const a = samples[i];
       const b = samples[i + 1];
-      context.fillStyle = mixHsla(low, high, ratios[i]);
+      context.fillStyle = gradientHsla(stops, ratios[i]);
       context.beginPath();
       context.moveTo(a.x, a.y);
       context.lineTo(a.tipX, a.tipY);
@@ -118,7 +125,7 @@ export function parseHsla(color) {
 
 /**
  * Interpolate two HSLA colors. The hue is interpolated linearly (not along the
- * shortest arc), so green (120) to red (0) passes through yellow.
+ * shortest arc).
  */
 export function mixHsla(from, to, ratio) {
   const r = Math.min(1, Math.max(0, ratio));
@@ -127,6 +134,16 @@ export function mixHsla(from, to, ratio) {
     `hsla(${mix("h").toFixed(1)}, ${mix("s").toFixed(1)}%, ` +
     `${mix("l").toFixed(1)}%, ${mix("a").toFixed(3)})`
   );
+}
+
+/**
+ * Color at ratio (0..1) along evenly spaced HSLA stops.
+ */
+export function gradientHsla(stops, ratio) {
+  const r = Math.min(1, Math.max(0, ratio));
+  const position = r * (stops.length - 1);
+  const index = Math.min(stops.length - 2, Math.floor(position));
+  return mixHsla(stops[index], stops[index + 1], position - index);
 }
 
 function* iterSegments(path, contourIndex) {
