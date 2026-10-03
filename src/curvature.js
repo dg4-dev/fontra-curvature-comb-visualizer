@@ -144,3 +144,39 @@ export function sampleSegmentComb(type, pts, numSamples, gain, maxLength = Infin
 export function combGain(unitsPerEm, scale) {
   return unitsPerEm * unitsPerEm * 0.005 * scale;
 }
+
+/**
+ * Curvature strength of each interval between adjacent comb samples: the mean
+ * |k| of the interval's two samples. Returns samples.length - 1 values.
+ */
+export function intervalCurvatures(samples) {
+  const strengths = [];
+  for (let i = 0; i < samples.length - 1; i++) {
+    strengths.push((Math.abs(samples[i].k) + Math.abs(samples[i + 1].k)) / 2);
+  }
+  return strengths;
+}
+
+/**
+ * Position of each interval's curvature strength between the weakest (0) and
+ * the strongest (1) interval of all the given combs, typically the curved
+ * segments of one contour. Returns one array of ratios per comb.
+ *
+ * When all intervals are (nearly) equally strong, every ratio is 0.
+ */
+export function contourCurvatureRatios(combs) {
+  const strengths = combs.map(intervalCurvatures);
+  let min = Infinity;
+  let max = -Infinity;
+  for (const values of strengths) {
+    for (const v of values) {
+      min = Math.min(min, v);
+      max = Math.max(max, v);
+    }
+  }
+  const range = max - min;
+  if (!(range > EPSILON * Math.max(1, max))) {
+    return strengths.map((values) => values.map(() => 0));
+  }
+  return strengths.map((values) => values.map((v) => (v - min) / range));
+}
