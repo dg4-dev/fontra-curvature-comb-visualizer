@@ -3,6 +3,8 @@ import { test } from "node:test";
 import {
   combGain,
   evaluateSegment,
+  contourCurvatureRatios,
+  intervalCurvatures,
   sampleSegmentComb,
   signedCurvature,
 } from "../src/curvature.js";
@@ -134,4 +136,24 @@ test("combGain scales with UPM squared", () => {
   near(combGain(1000, 1) / 100, 50); // r = 100 at 1000 UPM -> 50 units
   near(combGain(2000, 1), 4 * combGain(1000, 1));
   near(combGain(1000, 2), 2 * combGain(1000, 1));
+});
+
+test("interval curvatures are the mean |k| of adjacent samples", () => {
+  assert.deepEqual(intervalCurvatures([{ k: 0 }, { k: -2 }, { k: 4 }]), [1, 3]);
+});
+
+test("contour ratios span from the weakest to the strongest interval", () => {
+  const ratios = contourCurvatureRatios([
+    [{ k: 1 }, { k: 1 }, { k: -3 }], // strengths 1, 2
+    [{ k: 5 }, { k: 5 }], // strength 5
+  ]);
+  assert.deepEqual(ratios, [[0, 0.25], [1]]);
+});
+
+test("contour ratios are zero when curvature is uniform", () => {
+  assert.deepEqual(contourCurvatureRatios([[{ k: 0 }, { k: 0 }, { k: 0 }]]), [[0, 0]]);
+  assert.deepEqual(contourCurvatureRatios([[{ k: 2 }, { k: -2 }], [{ k: 2 }, { k: 2 }]]), [
+    [0],
+    [0],
+  ]);
 });
