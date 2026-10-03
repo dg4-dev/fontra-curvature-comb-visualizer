@@ -1,39 +1,37 @@
 # Fontra Curvature Comb Visualizer
 
-[Fontra](https://github.com/fontra/fontra) のグリフ編集画面に、Glyphs 3 / 4 のような**曲率コーム(curvature comb)**をリアルタイムで重ねて表示するプラグインです。
+A [Fontra](https://github.com/fontra/fontra) plugin that draws live **curvature combs** on the glyph being edited, similar to Glyphs 3 / 4.
 
-A Fontra plugin that draws live curvature combs on the glyph being edited, similar to Glyphs 3 / 4.
+- Draws combs on the contours (quadratic and cubic Bézier curves) of the glyph being edited
+- The comb follows along while you drag points and handles
+- The comb points away from the center of curvature (outside the convex side) and switches sides at inflection points. Places where the curvature does not join smoothly (G2 discontinuities) show up as steps in the comb
+- The comb is drawn as a band filled between its teeth. Within each contour (connected path), the band is gray where the curvature is weakest and red where it is strongest, passing through yellow in between
+- Supports light and dark themes
+- The UI follows Fontra's display language (Application settings → Display Language). Like Fontra itself, it shows English when there is no translation for that language
 
-- 編集中のグリフの輪郭(2次・3次ベジェ曲線)にコームを描きます
-- 点やハンドルをドラッグしている最中も、コームが追従して更新されます
-- コームは曲率の中心と反対側(凸側の外)に伸び、変曲点で反対側へ移ります。曲率がなめらかにつながっていない箇所(G2 不連続)は、コームの段差として見えます
-- コームは歯と歯の間を塗った帯で描きます。帯の色は、同じ輪郭(つながったパス)の中で曲率がいちばん弱いところを灰色、いちばん強いところを赤とし、その間は黄色を通って変わります
-- ライト/ダークテーマに対応します
-- UI は Fontra 本体の表示言語(Application settings → Display Language)に合わせて切り替わります。Fontra と同じく、その言語の訳がなければ英語で表示します
+## Installation
 
-## インストール
+In Fontra, open **Application settings → Plugin Manager**, press "+" and enter the plugin address.
 
-Fontra の **Application settings → Plugins** で「+」を押し、プラグインのアドレスを入力します。
-
-### GitHub から
+### From GitHub
 
 ```plaintext
 dg4-dev/fontra-curvature-comb-visualizer
 ```
 
-`owner/repo` 形式のアドレスは、Fontra が jsDelivr 経由(`https://cdn.jsdelivr.net/gh/<owner>/<repo>@latest`)で読み込みます(リポジトリが公開されている必要があります)。`@latest` はタグがあれば最新のリリースタグ、なければ既定のブランチ(`main`)を指します。
+Fontra loads `owner/repo` addresses through jsDelivr (`https://cdn.jsdelivr.net/gh/<owner>/<repo>@latest`), so the repository must be public. `@latest` points to the newest release tag, or to the default branch (`main`) when there are no tags.
 
-開発中のブランチを試すときは、ブランチ名を付けた URL を入力します。
+To try a development branch, enter a URL with the branch name.
 
 ```plaintext
 https://cdn.jsdelivr.net/gh/dg4-dev/fontra-curvature-comb-visualizer@develop
 ```
 
-jsDelivr はブランチの内容をしばらくキャッシュするので、更新がすぐに反映されないことがあります。
+jsDelivr caches branch contents for a while, so updates may not show up right away.
 
-### ローカルから(開発用)
+### From a local copy (for development)
 
-手元の作業コピーを CORS ヘッダー付きで配信し、その URL をプラグインのアドレスとして登録します。編集した内容が、エディターを開き直すたびに反映されます。
+Serve your working copy with CORS headers and register its URL as the plugin address. Your edits are picked up each time you reopen the editor.
 
 ```plaintext
 npx http-server /path/to/fontra-curvature-comb-visualizer -p 8123 --cors -c-1
@@ -43,78 +41,78 @@ npx http-server /path/to/fontra-curvature-comb-visualizer -p 8123 --cors -c-1
 http://localhost:8123
 ```
 
-登録後、グリフ編集画面を開き直すと読み込まれます。
+After registering, reopen the glyph editor to load the plugin.
 
-## 使い方
+## Usage
 
-グリフ編集画面の右サイドバーに、曲率コームのタブ(アーチ形のアイコン)が加わります。
+A curvature comb tab (arch-shaped icon) is added to the right sidebar of the glyph editor.
 
-| 設定 | 内容 |
+| Setting | Description |
 | --- | --- |
-| 曲率コームを表示 | 表示/非表示を切り替えます |
-| コームの長さ | コームの長さの倍率です(×0.05〜×20、対数目盛)。UPM 1000 で半径 100 の円弧が、×1 のとき長さ 50 になります |
-| セグメントごとの分割数 | 1 セグメントあたりの歯の本数です(4〜80) |
-| 選択しているパスのみ | 点を選んでいる輪郭だけにコームを描きます |
-| コンポーネントも含める | コンポーネントの輪郭にもコームを描きます |
+| Show curvature comb | Shows or hides the comb |
+| Comb length | Length multiplier for the comb (×0.05–×20, logarithmic). At UPM 1000, an arc with radius 100 gets a comb of length 50 at ×1 |
+| Samples per segment | Number of teeth per segment (4–80) |
+| Selected contours only | Draws the comb only on contours with selected points |
+| Include components | Also draws the comb on component contours |
 
-スライダーはダブルクリックでデフォルトの値に戻ります。設定はブラウザの localStorage に保存されます。
+Double-click a slider to reset it to its default value. Settings are saved in the browser's localStorage.
 
-### 表示言語
+### Display language
 
-Fontra 本体が localStorage に保存している表示言語(`fontra-language-language`)を読み、その言語コードの訳を使います。訳のない言語は英語になります。Fontra は表示言語を変えるとページを読み込み直すので、プラグインの表示もそのとき切り替わります。
+The plugin reads the display language that Fontra stores in localStorage (`fontra-language-language`) and uses the translation for that language code. Languages without a translation show English. Fontra reloads the page when its display language changes, and the plugin switches language at the same time.
 
-| 言語 | 対応 |
+| Language | Translated |
 | --- | --- |
-| English, 简体中文, 繁體中文, 日本語, Deutsch, Nederlands, Français, Italiano, Español (España), Español (Latinoamérica), Português (Brasil), Português (Portugal), Русский | あり |
-| Tagalog | なし(英語で表示) |
+| English, 简体中文, 繁體中文, 日本語, Deutsch, Nederlands, Français, Italiano, Español (España), Español (Latinoamérica), Português (Brasil), Português (Portugal), Русский | Yes |
+| Tagalog | No (shown in English) |
 
-「パス」「コンポーネント」「デフォルトにリセット」など、Fontra 本体にある用語は本体の訳に合わせています。
+Terms that also appear in Fontra, such as "contour", "component" and "reset to default", follow Fontra's own translations.
 
-## しくみ
+## How it works
 
-各セグメント `B(t)` について、パラメーター `t` を等間隔に区切った点で符号付き曲率
+For each segment `B(t)`, the signed curvature
 
 ```plaintext
 κ = (x′·y″ − y′·x″) / (x′² + y′²)^(3/2)
 ```
 
-を求め、曲線上の点から法線方向に `κ × 長さ係数` だけ離れた位置に歯の先端を置きます。隣り合う 2 本の歯で囲まれた四角形を、2 本の `|κ|` の平均を求め、その輪郭の中で最も小さい値を 0、最も大きい値を 1 としたときの位置に応じて、灰色 → 黄色 → 赤で塗ります(0.5 で黄色)。輪郭全体で曲率がほぼ一定のときは、すべて灰色になります。直線セグメントは曲率が 0 なので描きません。ハンドルがノードに重なっていて `B′(t) = 0` になる端点では、わずかに内側の位置で曲率を求めます。
+is computed at evenly spaced values of the parameter `t`, and each tooth tip is placed `κ × length factor` away from the curve along the normal. For each quad between two adjacent teeth, the mean `|κ|` of the two teeth is taken; within the contour, the smallest of these values maps to 0 and the largest to 1, and the quad is filled gray → yellow → red by that position (yellow at 0.5). A contour with nearly constant curvature is drawn all gray. Straight segments have zero curvature and are not drawn. At end points where a handle sits on its node and `B′(t) = 0`, the curvature is taken at a position slightly inside the segment.
 
-輪郭の分解(TrueType の連続したオフカーブ点の扱いなど)は、Fontra 本体の `VarPackedPath.iterContourDecomposedSegments()` に任せています。
+Splitting contours into segments (including TrueType runs of consecutive off-curve points) is left to Fontra's `VarPackedPath.iterContourDecomposedSegments()`.
 
-## 制約
+## Limitations
 
-- Fontra の「表示 → グリフエディターの外観」メニューには出ません。このメニューの項目は Fontra 内部の action 登録が必要で、プラグインからは登録できないためです。表示の切り替えはサイドバーのパネルで行います。
-- プラグインは Fontra のエディター内部の API(`editor.visualizationLayers`、`editor.addSidebarPanel()` など)に依存します。Fontra 側の変更で動かなくなる可能性があります。
+- The comb does not appear in Fontra's "View → Glyph editor appearance" menu. Items in that menu need an internal Fontra action registration that plugins cannot make. Use the sidebar panel to toggle the comb instead.
+- The plugin relies on internal APIs of Fontra's editor (`editor.visualizationLayers`, `editor.addSidebarPanel()` and others). Changes in Fontra may break it.
 
-## 開発
+## Development
 
 ```plaintext
 src/
-  start.js       エントリーポイント(plugin.json の init / function)
-  comb-layer.js  Fontra の描画レイヤー定義と描画処理
-  curvature.js   曲率とコームの計算(Fontra や DOM に依存しない)
-  panel.js       サイドバーのパネル
-  settings.js    設定の保持と localStorage への保存
-  strings.js     UI の文言(Fontra の表示言語ごと)
-test/            node:test による単体テスト
+  start.js       Entry point (init / function in plugin.json)
+  comb-layer.js  Fontra visualization layer definition and drawing
+  curvature.js   Curvature and comb calculations (no Fontra or DOM dependencies)
+  panel.js       Sidebar panel
+  settings.js    Settings store, saved to localStorage
+  strings.js     UI strings for each of Fontra's display languages
+test/            Unit tests with node:test
 ```
 
-テストの実行(Node.js 22 以上、依存パッケージなし):
+Run the tests (Node.js 22 or later, no dependencies):
 
 ```plaintext
 npm test
 ```
 
-### ブランチ運用
+### Branching
 
-git-flow に沿って運用します。
+The repository follows git-flow.
 
-- `main`:リリース済みのコード。jsDelivr の `@latest` はタグがなければここを読み込みます
-- `develop`:次のリリースに向けた統合ブランチ
-- `feature/*`:機能ごとの作業ブランチ。`develop` から切って `develop` へマージします
-- `release/*`:リリース準備。`develop` から切って `main` と `develop` へマージし、`main` にタグを付けます
+- `main`: released code. jsDelivr's `@latest` loads this branch when there are no tags
+- `develop`: integration branch for the next release
+- `feature/*`: one branch per feature, branched from `develop` and merged back into `develop`
+- `release/*`: release preparation, branched from `develop`, merged into both `main` and `develop`, with a tag on `main`
 
-## ライセンス
+## License
 
-[GNU General Public License v3.0](LICENSE)(GPL-3.0)です。Fontra 本体と同じライセンスです。
+[GNU General Public License v3.0](LICENSE) (GPL-3.0), the same license as Fontra.
