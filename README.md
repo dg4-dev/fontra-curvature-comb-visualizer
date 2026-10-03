@@ -9,7 +9,7 @@ A Fontra plugin that draws live curvature combs on the glyph being edited, simil
 - コームは曲率の中心と反対側(凸側の外)に伸び、変曲点で反対側へ移ります。曲率がなめらかにつながっていない箇所(G2 不連続)は、コームの段差として見えます
 - コームは歯と歯の間を塗った帯で描きます。帯の色は、同じ輪郭(つながったパス)の中で曲率がいちばん弱いところを灰色、いちばん強いところを赤とし、その間は黄色を通って変わります
 - ライト/ダークテーマに対応します
-- UI は Fontra の表示言語に合わせて日本語/英語で表示します
+- UI は Fontra 本体の表示言語(Application settings → Display Language)に合わせて切り替わります。Fontra と同じく、その言語の訳がなければ英語で表示します
 
 ## インストール
 
@@ -54,10 +54,21 @@ http://localhost:8123
 | 曲率コームを表示 | 表示/非表示を切り替えます |
 | コームの長さ | コームの長さの倍率です(×0.05〜×20、対数目盛)。UPM 1000 で半径 100 の円弧が、×1 のとき長さ 50 になります |
 | セグメントごとの分割数 | 1 セグメントあたりの歯の本数です(4〜80) |
-| 選択中の輪郭のみ | 点を選んでいる輪郭だけにコームを描きます |
+| 選択しているパスのみ | 点を選んでいる輪郭だけにコームを描きます |
 | コンポーネントも含める | コンポーネントの輪郭にもコームを描きます |
 
-スライダーはダブルクリックで初期値に戻ります。設定はブラウザの localStorage に保存されます。
+スライダーはダブルクリックでデフォルトの値に戻ります。設定はブラウザの localStorage に保存されます。
+
+### 表示言語
+
+Fontra 本体が localStorage に保存している表示言語(`fontra-language-language`)を読み、その言語コードの訳を使います。訳のない言語は英語になります。Fontra は表示言語を変えるとページを読み込み直すので、プラグインの表示もそのとき切り替わります。
+
+| 言語 | 対応 |
+| --- | --- |
+| English, 简体中文, 繁體中文, 日本語, Deutsch, Nederlands, Français, Italiano, Español (España), Español (Latinoamérica), Português (Brasil), Português (Portugal), Русский | あり |
+| Tagalog | なし(英語で表示) |
+
+「パス」「コンポーネント」「デフォルトにリセット」など、Fontra 本体にある用語は本体の訳に合わせています。
 
 ## しくみ
 
@@ -85,7 +96,7 @@ src/
   curvature.js   曲率とコームの計算(Fontra や DOM に依存しない)
   panel.js       サイドバーのパネル
   settings.js    設定の保持と localStorage への保存
-  strings.js     UI の文言(英語/日本語)
+  strings.js     UI の文言(Fontra の表示言語ごと)
 test/            node:test による単体テスト
 ```
 
