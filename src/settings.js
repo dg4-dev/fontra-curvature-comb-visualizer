@@ -7,9 +7,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
   scale: 1, // comb length multiplier
   density: 24, // samples per segment
   selectedContoursOnly: false,
-  showTeeth: true,
-  showOutline: true,
-  showFill: true,
   includeComponents: false,
 });
 

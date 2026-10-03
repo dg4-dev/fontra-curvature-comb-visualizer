@@ -147,14 +147,6 @@ export function definePanelElement() {
         el(
           "div",
           { class: "group" },
-          this._checkbox("showTeeth", t("setting.showTeeth")),
-          this._checkbox("showOutline", t("setting.showOutline")),
-          this._checkbox("showFill", t("setting.showFill"))
-        ),
-        el("hr"),
-        el(
-          "div",
-          { class: "group" },
           this._checkbox("selectedContoursOnly", t("setting.selectedContoursOnly")),
           this._checkbox("includeComponents", t("setting.includeComponents"))
         ),

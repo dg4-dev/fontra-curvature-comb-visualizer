@@ -57,7 +57,7 @@ test("corrupt storage falls back to defaults", () => {
 
 test("reset restores defaults", () => {
   const settings = new CombSettings(new MemoryStorage());
-  settings.set("showFill", false);
+  settings.set("selectedContoursOnly", true);
   settings.set("density", 50);
   settings.reset();
   assert.deepEqual(settings.values, DEFAULT_SETTINGS);
